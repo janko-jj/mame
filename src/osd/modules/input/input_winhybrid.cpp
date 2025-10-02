@@ -1,5 +1,5 @@
 // license:BSD-3-Clause
-// copyright-holders:Brad Hughes
+// copyright-holders:Brad Hughes, Janko Stamenović
 //============================================================
 //
 //  input_winhybrid.cpp - Windows hybrid DirectInput/Xinput
@@ -16,59 +16,12 @@
 #include <vector>
 
 #include <oleauto.h>
-#include <wbemcli.h>
+#include <cfgmgr32.h>
 
 
 namespace osd {
 
 namespace {
-
-template <class TCom>
-class ComArray
-{
-private:
-	std::vector<TCom *> m_entries;
-
-public:
-	ComArray(size_t capacity) : m_entries(capacity, nullptr)
-	{
-	}
-
-	~ComArray()
-	{
-		Release();
-	}
-
-	TCom **ReleaseAndGetAddressOf()
-	{
-		Release();
-
-		// This works b/c vector elements are guaranteed to be contiguous.
-		return &m_entries[0];
-	}
-
-	TCom *operator[](int i)
-	{
-		return m_entries[i];
-	}
-
-	size_t Size()
-	{
-		return m_entries.size();
-	}
-
-	void Release()
-	{
-		for (auto &entry : m_entries)
-		{
-			if (entry)
-			{
-				entry->Release();
-				entry = nullptr;
-			}
-		}
-	}
-};
 
 struct bstr_deleter
 {
@@ -79,40 +32,6 @@ struct bstr_deleter
 	}
 };
 
-class variant_wrapper
-{
-private:
-	DISABLE_COPYING(variant_wrapper);
-	VARIANT m_variant;
-
-public:
-	variant_wrapper()
-	{
-		VariantInit(&m_variant);
-	}
-
-	~variant_wrapper()
-	{
-		Clear();
-	}
-
-	const VARIANT & Get() const
-	{
-		return m_variant;
-	}
-
-	VARIANT* ClearAndGetAddressOf()
-	{
-		Clear();
-		return &m_variant;
-	}
-
-	void Clear()
-	{
-		if (m_variant.vt != VT_EMPTY)
-			VariantClear(&m_variant);
-	}
-};
 
 typedef std::unique_ptr<OLECHAR, bstr_deleter> bstr_ptr;
 
@@ -171,16 +90,16 @@ public:
 
 		bool xinput_detect_failed = false;
 		std::vector<DWORD> xinput_deviceids;
-		HRESULT result = get_xinput_devices(xinput_deviceids);
-		if (result != 0)
+		CONFIGRET cret = get_xinput_devices(xinput_deviceids);
+		if (cret != CR_SUCCESS)
 		{
 			xinput_detect_failed = true;
 			xinput_deviceids.clear();
-			osd_printf_warning("XInput device detection failed. XInput won't be used. Error: 0x%X\n", uint32_t(result));
+			osd_printf_warning("XInput device detection failed. XInput won't be used. Error: 0x%X\n", uint32_t(cret));
 		}
 
 		// Enumerate all the DirectInput joysticks and add them if they aren't XInput compatible
-		result = m_dinput_helper->enum_attached_devices(
+		HRESULT result = m_dinput_helper->enum_attached_devices(
 				DI8DEVCLASS_GAMECTRL,
 				[this, &xinput_deviceids] (LPCDIDEVICEINSTANCE instance)
 				{
@@ -277,125 +196,57 @@ private:
 		return 0;
 	}
 
+	BOOL get_4hexd_id(PCSTR const strIn, PCSTR const prefix, PCSTR const fmt, DWORD* pval)
+	{
+		PCSTR const strFound = strstr(strIn, prefix);
+		return strFound && sscanf(strFound, fmt, pval) == 1;
+	}
+
 	//-----------------------------------------------------------------------------
-	// Enum each PNP device using WMI and check each device ID to see if it contains
+	// Enum each present PNP device in device information set using cfgmgr32
+	// and check each device ID to see if it contains
 	// "IG_" (ex. "VID_045E&PID_028E&IG_00").  If it does, then it's an XInput device
 	// Unfortunately this information can not be found by just using DirectInput.
 	// Checking against a VID/PID of 0x028E/0x045E won't find 3rd party or future
 	// XInput devices.
 	//-----------------------------------------------------------------------------
-	HRESULT get_xinput_devices(std::vector<DWORD> &xinput_deviceids)
+	CONFIGRET get_xinput_devices(std::vector<DWORD> &xinput_deviceids)
 	{
-		xinput_deviceids.clear();
-
-		HRESULT hr;
-
-		// Create WMI
-		Microsoft::WRL::ComPtr<IWbemLocator> pIWbemLocator;
-		hr = CoCreateInstance(
-				__uuidof(WbemLocator),
-				nullptr,
-				CLSCTX_INPROC_SERVER,
-				IID_PPV_ARGS(pIWbemLocator.GetAddressOf()));
-		if (FAILED(hr) || !pIWbemLocator)
-		{
-			osd_printf_error("Creating WbemLocator failed. Error: 0x%X\n", static_cast<unsigned int>(hr));
-			return hr;
+		ULONG cbBuff = 0;
+		ULONG flags = CM_GETIDLIST_FILTER_PRESENT;
+		CONFIGRET retval = CM_Get_Device_ID_List_SizeA(&cbBuff, nullptr, flags);
+		if (retval != CR_SUCCESS) {
+			osd_printf_error("CM_Get_Device_ID_List_SizeA failed.\n");
+			return retval;
 		}
-
-		// Create BSTRs for WMI
-		bstr_ptr bstrNamespace = bstr_ptr(SysAllocString(L"\\\\.\\root\\cimv2"));
-		bstr_ptr bstrDeviceID = bstr_ptr(SysAllocString(L"DeviceID"));
-		bstr_ptr bstrClassName = bstr_ptr(SysAllocString(L"Win32_PNPEntity"));
-
-		// Connect to WMI
-		Microsoft::WRL::ComPtr<IWbemServices> pIWbemServices;
-		hr = pIWbemLocator->ConnectServer(
-				bstrNamespace.get(),
-				nullptr,
-				nullptr,
-				nullptr,
-				0L,
-				nullptr,
-				nullptr,
-				pIWbemServices.GetAddressOf());
-		if (FAILED(hr) || !pIWbemServices)
-		{
-			osd_printf_error("Connecting to WMI Server failed. Error: 0x%X\n", static_cast<unsigned int>(hr));
-			return hr;
+		std::vector<char> buff;
+		buff.resize(cbBuff);
+		retval = CM_Get_Device_ID_ListA(nullptr, buff.data(), cbBuff, flags);
+		if (retval != CR_SUCCESS) {
+			osd_printf_error("CM_Get_Device_ID_ListA failed.\n");
+			return retval;
 		}
-
-		// Switch security level to IMPERSONATE
-		(void)CoSetProxyBlanket(
-				pIWbemServices.Get(),
-				RPC_C_AUTHN_WINNT,
-				RPC_C_AUTHZ_NONE,
-				nullptr,
-				RPC_C_AUTHN_LEVEL_CALL,
-				RPC_C_IMP_LEVEL_IMPERSONATE,
-				nullptr,
-				0);
-
-		// Get list of Win32_PNPEntity devices
-		Microsoft::WRL::ComPtr<IEnumWbemClassObject> pEnumDevices;
-		hr = pIWbemServices->CreateInstanceEnum(bstrClassName.get(), 0, nullptr, pEnumDevices.GetAddressOf());
-		if (FAILED(hr) || !pEnumDevices)
+		char* strDeviceID = buff.data();
+		DWORD len = strlen(strDeviceID);
+		while (len) 
 		{
-			osd_printf_error("Getting list of Win32_PNPEntity devices failed. Error: 0x%X\n", static_cast<unsigned int>(hr));
-			return hr;
-		}
-
-		// Loop over all devices
-		ComArray<IWbemClassObject> pDevices(20);
-		variant_wrapper var;
-		for ( ; ; )
-		{
-			// Get a few at a time
-			DWORD uReturned = 0;
-			hr = pEnumDevices->Next(10000, pDevices.Size(), pDevices.ReleaseAndGetAddressOf(), &uReturned);
-			if (FAILED(hr))
+			printf( "%s\n", strDeviceID );
+			// Check if the device ID contains "IG_".  If it does, then it's an XInput device
+			// Unfortunately this information can not be found by just using DirectInput
+			// If it does, then get the VID/PID
+			DWORD dwVid = 0;
+			DWORD dwPid = 0;
+			if (strstr(strDeviceID, "IG_") &&
+				get_4hexd_id(strDeviceID, "VID_", "VID_%4X", &dwVid) &&
+				get_4hexd_id(strDeviceID, "PID_", "PID_%4X", &dwPid))
 			{
-				osd_printf_error("Enumerating WMI classes failed. Error: 0x%X\n", static_cast<unsigned int>(hr));
-				return hr;
+				// Add the VID/PID to a list
+				xinput_deviceids.push_back(MAKELONG(dwVid, dwPid));
 			}
-			if (uReturned == 0)
-				break;
-
-			for (UINT iDevice = 0; iDevice < uReturned; iDevice++)
-			{
-				if (!pDevices[iDevice])
-					continue;
-
-				// For each device, get its device ID
-				hr = pDevices[iDevice]->Get(bstrDeviceID.get(), 0L, var.ClearAndGetAddressOf(), nullptr, nullptr);
-				if (SUCCEEDED(hr) && var.Get().vt == VT_BSTR && var.Get().bstrVal != nullptr)
-				{
-					// Check if the device ID contains "IG_".  If it does, then it's an XInput device
-					// Unfortunately this information can not be found by just using DirectInput
-					if (wcsstr(var.Get().bstrVal, L"IG_"))
-					{
-						// If it does, then get the VID/PID from var.bstrVal
-						DWORD dwVid = 0;
-						WCHAR const *const strVid = wcsstr(var.Get().bstrVal, L"VID_");
-						if (strVid && swscanf(strVid, L"VID_%4X", &dwVid) != 1)
-							dwVid = 0;
-
-						DWORD dwPid = 0;
-						WCHAR const *const strPid = wcsstr(var.Get().bstrVal, L"PID_");
-						if (strPid && swscanf(strPid, L"PID_%4X", &dwPid) != 1)
-							dwPid = 0;
-
-						// Add the VID/PID to a list
-						xinput_deviceids.push_back(MAKELONG(dwVid, dwPid));
-					}
-				}
-			}
+			strDeviceID += len + 1;
+			len = strlen(strDeviceID);
 		}
-
-		if (SUCCEEDED(hr))
-			hr = S_OK;
-
-		return hr;
+		return CR_SUCCESS;
 	}
 };
 
