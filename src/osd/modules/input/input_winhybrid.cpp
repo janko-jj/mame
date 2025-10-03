@@ -215,14 +215,20 @@ private:
 		ULONG cbBuff = 0;
 		ULONG flags = CM_GETIDLIST_FILTER_PRESENT;
 		CONFIGRET retval = CM_Get_Device_ID_List_SizeA(&cbBuff, nullptr, flags);
-		if (retval != CR_SUCCESS) {
+		if (retval != CR_SUCCESS) 
+		{
 			osd_printf_error("CM_Get_Device_ID_List_SizeA failed.\n");
+			return retval;
+		}
+		if (cbBuff == 0)
+		{
 			return retval;
 		}
 		std::vector<char> buff;
 		buff.resize(cbBuff);
 		retval = CM_Get_Device_ID_ListA(nullptr, buff.data(), cbBuff, flags);
-		if (retval != CR_SUCCESS) {
+		if (retval != CR_SUCCESS) 
+		{
 			osd_printf_error("CM_Get_Device_ID_ListA failed.\n");
 			return retval;
 		}
