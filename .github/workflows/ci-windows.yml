@@ -34,6 +34,7 @@ jobs:
             cc: gcc
             cxx: g++
             subtarget: mame
+            SOURCES: sinclair/specnext.cpp,sinclair/spectrum.cpp,sinclair/spec128.cpp,sinclair/specpls3.cpp
             executable: mame
           - compiler: clang-x64
             os: windows-latest
