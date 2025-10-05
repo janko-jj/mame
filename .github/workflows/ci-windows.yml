@@ -32,8 +32,8 @@ jobs:
             os: windows-latest
             msys: MINGW64
             slug: mingw-w64-x86_64
-            cc: ccache gcc
-            cxx: ccache g++
+            cc: gcc
+            cxx: g++
             subtarget: mame
             executable: mame
     runs-on: ${{ matrix.os }}
@@ -48,11 +48,18 @@ jobs:
     - uses: actions/checkout@main
       with:
         fetch-depth: 0  
-      # Set up ccache environment variables
-    - name: Set up ccache
+    - name: Setup ccache and symlink compilers to ccache
+      shell: msys2 {0}
       run: |
-             echo "export CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
-             ccache --max-size=400M       
+        echo "export CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
+        ccache --max-size=400M       
+        cd /mingw64/bin
+        for prog in gcc g++ cc c++; do
+          if [ -f "$prog" ] && [ ! -L "$prog" ]; then
+             mv "$prog" "$prog.real"
+             ln -s ccache.exe "$prog"
+          fi
+        done             
       # Restore ccache
     - name: Restore ccache
       uses: actions/cache@v4
