@@ -36,23 +36,6 @@ jobs:
             cxx: ccache g++
             subtarget: mame
             executable: mame
-          - compiler: clang-x64
-            os: windows-latest
-            msys: MINGW64
-            slug: mingw-w64-x86_64
-            cc: clang
-            cxx: clang++
-            subtarget: tiny
-            executable: mametiny
-          - compiler: clang-arm64
-            os: windows-11-arm
-            msys: CLANGARM64
-            slug: mingw-w64-clang-aarch64
-            extrapkg: mingw-w64-clang-aarch64-gcc-compat
-            cc: clang
-            cxx: clang++
-            subtarget: mame
-            executable: mame
     runs-on: ${{ matrix.os }}
     defaults:
       run:
