@@ -1,7 +1,8 @@
 name: CI (macOS)
 
 on:
-  push:
+  # push:
+  workflow_dispatch:
     paths:
     - '.github/workflows/**'
     - '3rdparty/**'
