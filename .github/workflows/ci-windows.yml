@@ -54,9 +54,11 @@ jobs:
         echo "export CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
         echo "$HOME/bin:$PATH" >> $GITHUB_PATH
         ccache --max-size=400M
+        echo $(which ccache)
         mkdir bin
-        cp /mingw64/bin/ccache.exe bin/ccache.exe
+        cp $(which ccache) bin/ccache.exe
         cd bin
+        pwd
         ln -s ccache.exe cc.exe
         ln -s ccache.exe gcc.exe
         ln -s ccache.exe c++.exe
@@ -66,6 +68,7 @@ jobs:
         ln -s ccache.exe x86_64-w64-mingw32-c++.exe
         ln -s ccache.exe x86_64-w64-mingw32-g++.exe
         ln -s ccache.exe x86_64-w64-mingw32-gcc-15.2.0.exe
+        ls
         cd ..
       # Restore ccache
     - name: Restore ccache
