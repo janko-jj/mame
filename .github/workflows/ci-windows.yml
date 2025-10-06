@@ -52,14 +52,21 @@ jobs:
       shell: msys2 {0}
       run: |
         echo "export CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
-        ccache --max-size=400M       
-        cd /mingw64/bin
-        for prog in gcc g++ cc c++; do
-          if [ -f "$prog" ] && [ ! -L "$prog" ]; then
-             mv "$prog" "$prog.real"
-             ln -s ccache.exe "$prog"
-          fi
-        done             
+        echo "$HOME/bin:$PATH" >> $GITHUB_PATH
+        ccache --max-size=400M
+        mkdir bin
+        cp /mingw64/bin/ccache.exe bin/ccache.exe
+        cd bin
+        ln -s ccache.exe cc.exe
+        ln -s ccache.exe gcc.exe
+        ln -s ccache.exe c++.exe
+        ln -s ccache.exe g++.exe
+        ln -s ccache.exe x86_64-w64-mingw32-cc.exe
+        ln -s ccache.exe x86_64-w64-mingw32-gcc.exe
+        ln -s ccache.exe x86_64-w64-mingw32-c++.exe
+        ln -s ccache.exe x86_64-w64-mingw32-g++.exe
+        ln -s ccache.exe x86_64-w64-mingw32-gcc-15.2.0.exe
+        cd ..
       # Restore ccache
     - name: Restore ccache
       uses: actions/cache@v4
