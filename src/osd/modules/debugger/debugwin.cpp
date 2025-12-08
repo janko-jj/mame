@@ -239,7 +239,7 @@ void debugger_windows::wait_for_debugger(device_t &device, bool firststop)
 		} 
 		else if (!again) 
 		{
-			Sleep( 1 ); // give up this slice
+			// Sleep( 1 ); // give up this slice
 			again = true; // after the wait there could be something to handle, loop again
 		}
 	} while (again);
