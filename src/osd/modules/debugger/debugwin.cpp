@@ -214,7 +214,7 @@ void debugger_windows::wait_for_debugger(device_t &device, bool firststop)
 	// doesn't wait on input at all, instead it uses up 100% of its CPU
 	// when it should wait on the user's input.
 	MSG message;
-	int passes = 0;
+	bool again = false;
 	do 
 	{
 		if (PeekMessage(&message, nullptr, 0, 0, PM_REMOVE)) 
@@ -235,22 +235,14 @@ void debugger_windows::wait_for_debugger(device_t &device, bool firststop)
 				winwindow_dispatch_message(*m_machine, message);
 				break;
 			}
-			passes = 2;
+			break; // once is enough
 		} 
-		else if (0 && (0 == passes)) // try: never here
+		else if (!again) 
 		{
-			enum { NUM_OF_PERIODICS_PER_SEC_WHILE_NO_INPUT = 50,
-			       MILLISECS_TO_WAIT = 1000 / NUM_OF_PERIODICS_PER_SEC_WHILE_NO_INPUT 
-			};
-			// An example: 1000/50 periodics per second = 20 milliseconds for one wait
-			// events per second during the time the user makes no input
-			DWORD wait = MsgWaitForMultipleObjects(0, nullptr, false, MILLISECS_TO_WAIT, QS_ALLINPUT);
-			if (wait != WAIT_TIMEOUT && wait != WAIT_FAILED)
-			{
-				passes = 1; // after the wait the could be something to handle, loop again
-			}
+			Sleep( 1 ); // give up this slice
+			again = true; // after the wait there could be something to handle, loop again
 		}
-	} while (1 == passes);
+	} while (again);
 
 	// mark the debugger as active
 	m_waiting_for_debugger = false;
