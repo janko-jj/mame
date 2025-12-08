@@ -235,6 +235,7 @@ void debugger_windows::wait_for_debugger(device_t &device, bool firststop)
 				winwindow_dispatch_message(*m_machine, message);
 				break;
 			}
+			passes = 2;
 		} 
 		else if (0 == passes) 
 		{
@@ -246,7 +247,7 @@ void debugger_windows::wait_for_debugger(device_t &device, bool firststop)
 			DWORD wait = MsgWaitForMultipleObjects(0, nullptr, false, MILLISECS_TO_WAIT, QS_ALLINPUT);
 			if (wait != WAIT_TIMEOUT && wait != WAIT_FAILED)
 			{
-				passes++; // after the wait the could be something to handle, loop again
+				passes = 1; // after the wait the could be something to handle, loop again
 			}
 		}
 	} while (1 == passes);
