@@ -214,9 +214,11 @@ void debugger_windows::wait_for_debugger(device_t &device, bool firststop)
 	// doesn't wait on input at all, instead it uses up 100% of its CPU
 	// when it should wait on the user's input.
 	MSG message;
-	bool again = false;
-	do {
-		if (PeekMessage(&message, nullptr, 0, 0, PM_REMOVE)) {
+	int passes = 0;
+	do 
+	{
+		if (PeekMessage(&message, nullptr, 0, 0, PM_REMOVE)) 
+		{
 			switch (message.message)
 			{
 			// check for F10 -- we need to capture that ourselves
@@ -233,21 +235,26 @@ void debugger_windows::wait_for_debugger(device_t &device, bool firststop)
 				winwindow_dispatch_message(*m_machine, message);
 				break;
 			}
-			again = false;
-		} else {
-			enum { NUM_OF_PERIODIC_PER_SEC_WHILE_NO_INPUT = 20,
-			       MILLISECS_TO_WAIT = 1000 / NUM_OF_PERIODIC_PER_SEC_WHILE_NO_INPUT 
+		} 
+		else if (0 == passes) 
+		{
+			enum { NUM_OF_PERIODICS_PER_SEC_WHILE_NO_INPUT = 50,
+			       MILLISECS_TO_WAIT = 1000 / NUM_OF_PERIODICS_PER_SEC_WHILE_NO_INPUT 
 			};
-			// An example: 1000/20=50 milliseconds is enough to create around 20 periodic 
+			// An example: 1000/50 periodics per second = 20 milliseconds for one wait
 			// events per second during the time the user makes no input
-			if (MsgWaitForMultipleObjects(0, nullptr, false, MILLISECS_TO_WAIT, QS_ALLINPUT) == WAIT_OBJECT_0)
-				again = true; // there was a new input during wait, dispatch it too
+			DWORD wait = MsgWaitForMultipleObjects(0, nullptr, false, MILLISECS_TO_WAIT, QS_ALLINPUT);
+			if (wait != WAIT_TIMEOUT && wait != WAIT_FAILED)
+			{
+				passes++; // after the wait the could be something to handle, loop again
+			}
 		}
-	} while (again);
+	} while (1 == passes);
 
 	// mark the debugger as active
 	m_waiting_for_debugger = false;
 }
+
 
 
 void debugger_windows::debugger_update()
