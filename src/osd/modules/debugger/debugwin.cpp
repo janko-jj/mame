@@ -9,7 +9,7 @@
 #include "emu.h"
 #include "debug_module.h"
 
-#if defined(OSD_WINDOWS) /*|| defined(SDLMAME_WIN32)*/
+#if 1 || defined(OSD_WINDOWS) /*|| defined(SDLMAME_WIN32)*/
 
 #include "win/debugwin.h"
 
@@ -205,25 +205,45 @@ void debugger_windows::wait_for_debugger(device_t &device, bool firststop)
 	downcast<windows_osd_interface&>(machine().osd()).poll_input_modules(false);
 
 	// get and process messages
+	//
+	// If it would be just a GetMessage then the main thread can remain stuck
+	// infinitely (instead of calling from time to time lua periodic handler)
+	// when the mouse is not inside of the window and the application window
+	// doesn't have focus.
+	// We also don't want just a PeekMessage as then the main thread then
+	// doesn't wait on input at all, instead it uses up 100% of its CPU
+	// when it should wait on the user's input.
 	MSG message;
-	GetMessage(&message, nullptr, 0, 0);
+	bool again = false;
+	do {
+		if (PeekMessage(&message, nullptr, 0, 0, PM_REMOVE)) {
+			switch (message.message)
+			{
+			// check for F10 -- we need to capture that ourselves
+			case WM_SYSKEYDOWN:
+			case WM_SYSKEYUP:
+				if (message.wParam == VK_F4 && message.message == WM_SYSKEYDOWN)
+					SendMessage(GetAncestor(GetFocus(), GA_ROOT), WM_CLOSE, 0, 0);
+				if (message.wParam == VK_F10)
+					SendMessage(GetAncestor(GetFocus(), GA_ROOT), (message.message == WM_SYSKEYDOWN) ? WM_KEYDOWN : WM_KEYUP, message.wParam, message.lParam);
+				break;
 
-	switch (message.message)
-	{
-	// check for F10 -- we need to capture that ourselves
-	case WM_SYSKEYDOWN:
-	case WM_SYSKEYUP:
-		if (message.wParam == VK_F4 && message.message == WM_SYSKEYDOWN)
-			SendMessage(GetAncestor(GetFocus(), GA_ROOT), WM_CLOSE, 0, 0);
-		if (message.wParam == VK_F10)
-			SendMessage(GetAncestor(GetFocus(), GA_ROOT), (message.message == WM_SYSKEYDOWN) ? WM_KEYDOWN : WM_KEYUP, message.wParam, message.lParam);
-		break;
-
-	// process everything else
-	default:
-		winwindow_dispatch_message(*m_machine, message);
-		break;
-	}
+			// process everything else
+			default:
+				winwindow_dispatch_message(*m_machine, message);
+				break;
+			}
+			again = false;
+		} else {
+			enum { NUM_OF_PERIODIC_PER_SEC_WHILE_NO_INPUT = 20,
+			       MILLISECS_TO_WAIT = 1000 / NUM_OF_PERIODIC_PER_SEC_WHILE_NO_INPUT 
+			};
+			// An example: 1000/20=50 milliseconds is enough to create around 20 periodic 
+			// events per second during the time the user makes no input
+			if (MsgWaitForMultipleObjects(0, nullptr, false, MILLISECS_TO_WAIT, QS_ALLINPUT) == WAIT_OBJECT_0)
+				again = true; // there was a new input during wait, dispatch it too
+		}
+	} while (again);
 
 	// mark the debugger as active
 	m_waiting_for_debugger = false;
