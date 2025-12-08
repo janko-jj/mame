@@ -237,7 +237,7 @@ void debugger_windows::wait_for_debugger(device_t &device, bool firststop)
 			}
 			passes = 2;
 		} 
-		else if (0 == passes) 
+		else if (0 && (0 == passes)) // try: never here
 		{
 			enum { NUM_OF_PERIODICS_PER_SEC_WHILE_NO_INPUT = 50,
 			       MILLISECS_TO_WAIT = 1000 / NUM_OF_PERIODICS_PER_SEC_WHILE_NO_INPUT 
