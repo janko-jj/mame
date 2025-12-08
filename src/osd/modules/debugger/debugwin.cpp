@@ -207,36 +207,36 @@ void debugger_windows::wait_for_debugger(device_t &device, bool firststop)
 	// get and process messages
 	//
 	// If it would be just a GetMessage then the main thread can remain stuck
-	// infinitely (instead of calling from time to time lua periodic handler)
+	// infinitely (instead of calling from time to time the lua periodic handler)
 	// when the mouse is not inside of the window and the application window
 	// doesn't have focus.
 	// We also don't want just a PeekMessage as then the main thread then
 	// doesn't wait on input at all, instead it uses up 100% of its CPU
-	// when it should wait on the user's input.
+	// when it's main goal is to wait on the user's input.
 	MSG message;
-		if (PeekMessage(&message, nullptr, 0, 0, PM_REMOVE)) 
+	if (PeekMessage(&message, nullptr, 0, 0, PM_REMOVE)) 
+	{
+		switch (message.message)
 		{
-			switch (message.message)
-			{
-			// check for F10 -- we need to capture that ourselves
-			case WM_SYSKEYDOWN:
-			case WM_SYSKEYUP:
-				if (message.wParam == VK_F4 && message.message == WM_SYSKEYDOWN)
-					SendMessage(GetAncestor(GetFocus(), GA_ROOT), WM_CLOSE, 0, 0);
-				if (message.wParam == VK_F10)
-					SendMessage(GetAncestor(GetFocus(), GA_ROOT), (message.message == WM_SYSKEYDOWN) ? WM_KEYDOWN : WM_KEYUP, message.wParam, message.lParam);
-				break;
+		// check for F10 -- we need to capture that ourselves
+		case WM_SYSKEYDOWN:
+		case WM_SYSKEYUP:
+			if (message.wParam == VK_F4 && message.message == WM_SYSKEYDOWN)
+				SendMessage(GetAncestor(GetFocus(), GA_ROOT), WM_CLOSE, 0, 0);
+			if (message.wParam == VK_F10)
+				SendMessage(GetAncestor(GetFocus(), GA_ROOT), (message.message == WM_SYSKEYDOWN) ? WM_KEYDOWN : WM_KEYUP, message.wParam, message.lParam);
+			break;
 
-			// process everything else
-			default:
-				winwindow_dispatch_message(*m_machine, message);
-				break;
-			}
-		} 
-		else 
-		{
-			Sleep( 1 ); // give up this slice
+		// process everything else
+		default:
+			winwindow_dispatch_message(*m_machine, message);
+			break;
 		}
+	} 
+	else 
+	{
+		Sleep( 1 ); // give up this slice
+	}
 		
 	// mark the debugger as active
 	m_waiting_for_debugger = false;
