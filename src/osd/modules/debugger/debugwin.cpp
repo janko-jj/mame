@@ -214,9 +214,6 @@ void debugger_windows::wait_for_debugger(device_t &device, bool firststop)
 	// doesn't wait on input at all, instead it uses up 100% of its CPU
 	// when it should wait on the user's input.
 	MSG message;
-	bool again = false;
-	do 
-	{
 		if (PeekMessage(&message, nullptr, 0, 0, PM_REMOVE)) 
 		{
 			switch (message.message)
@@ -235,15 +232,12 @@ void debugger_windows::wait_for_debugger(device_t &device, bool firststop)
 				winwindow_dispatch_message(*m_machine, message);
 				break;
 			}
-			break; // once is enough
 		} 
-		else if (!again) 
+		else 
 		{
-			// Sleep( 1 ); // give up this slice
-			again = true; // after the wait there could be something to handle, loop again
+			Sleep( 1 ); // give up this slice
 		}
-	} while (again);
-
+		
 	// mark the debugger as active
 	m_waiting_for_debugger = false;
 }
