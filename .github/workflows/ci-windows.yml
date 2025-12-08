@@ -37,6 +37,8 @@ jobs:
             subtarget: mame
             executable: mame
     runs-on: ${{ matrix.os }}
+    env:
+       CCACHE_DIR: "${{ github.workspace }}/.ccache"
     defaults:
       run:
         shell: msys2 {0}
@@ -51,7 +53,6 @@ jobs:
     - name: Setup ccache and symlink compilers to ccache
       shell: msys2 {0}
       run: |
-        echo "export CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
         echo "$HOME/bin:$PATH" >> $GITHUB_PATH
         ccache --max-size=400M
         echo $(which ccache)
@@ -70,14 +71,15 @@ jobs:
         ln -s ccache.exe x86_64-w64-mingw32-gcc-15.2.0.exe
         ls
         cd ..
+          
       # Restore ccache
     - name: Restore ccache
       uses: actions/cache@v4
       with:
-          path: ~/.ccache
-          key: msys2-ccache-${{ github.sha }}
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ matrix.distro }}-${{github.run_id}}
           restore-keys: |
-            msys2-ccache-
+            ccache-${{ matrix.distro }}-
     - name: Build
       env:
         OVERRIDE_AR: "llvm-ar"
