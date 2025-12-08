@@ -9,7 +9,7 @@
 #include "emu.h"
 #include "debug_module.h"
 
-#if 1 || defined(OSD_WINDOWS) /*|| defined(SDLMAME_WIN32)*/
+#if defined(OSD_WINDOWS) /*|| defined(SDLMAME_WIN32)*/
 
 #include "win/debugwin.h"
 
