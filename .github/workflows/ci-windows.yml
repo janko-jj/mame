@@ -37,7 +37,9 @@ jobs:
             subtarget: mame
             executable: mame
     runs-on: ${{ matrix.os }}
-    permissions: write-all
+    # write permission needed for setup-ccache-action to remove its stale caches
+    # see its readme to disable that if no permissions are to be allowed
+    permissions: write
     env:
        CCACHE_DIR: "${{ github.workspace }}/.ccache"
     defaults:
