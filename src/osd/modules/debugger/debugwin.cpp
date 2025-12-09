@@ -39,6 +39,22 @@ namespace osd {
 
 namespace {
 
+class win_timer {
+public:
+	win_timer() : m_timer( 0 ) {}
+	~win_timer() { kill(); }
+	UINT_PTR get_timer_id() { return m_timer_id; }
+    void set_timer( HWND hWnd, UINT_PTR id_event, UINT u_elapse ) {
+		kill();
+		m_idevent = id_event;
+		m_timer_id = SetTimer( hWnd, id_event, u_elapse, (TIMERPROC)NULL );
+	}
+	void kill() { if (m_timer_id) KillTimer( m_timer_id, m_idevent ); }
+	UINT_PTR  m_idevent;
+private:
+	UINT_PTR  m_timer_id;
+};
+
 class debugger_windows :
 		public osd_module,
 		public debug_module,
@@ -118,6 +134,8 @@ private:
 	bool m_save_windows;
 	bool m_group_windows;
 	bool m_group_windows_setting;
+
+	win_timer m_min_periodic_timer;
 };
 
 
@@ -178,6 +196,11 @@ void debugger_windows::wait_for_debugger(device_t &device, bool firststop)
 			}
 		}
 	}
+	
+	if (!m_min_periodic_timer.get_timer_id())
+	{
+		m_min_periodic_timer.set_timer( window(), WM_USER+1, 100 ); // 100 == 10 times per second
+	}
 
 	// update the views in the console to reflect the current CPU
 	if (m_main_console)
@@ -205,37 +228,24 @@ void debugger_windows::wait_for_debugger(device_t &device, bool firststop)
 	downcast<windows_osd_interface&>(machine().osd()).poll_input_modules(false);
 
 	// get and process messages
-	//
-	// If it would be just a GetMessage then the main thread can remain stuck
-	// infinitely (instead of calling from time to time the lua periodic handler)
-	// when the mouse is not inside of the window and the application window
-	// doesn't have focus.
-	// We also don't want just a PeekMessage as then the main thread then
-	// doesn't wait on input at all, instead it uses up 100% of its CPU
-	// when it's main goal is to wait on the user's input.
 	MSG message;
-	if (PeekMessage(&message, nullptr, 0, 0, PM_REMOVE)) 
-	{
-		switch (message.message)
-		{
-		// check for F10 -- we need to capture that ourselves
-		case WM_SYSKEYDOWN:
-		case WM_SYSKEYUP:
-			if (message.wParam == VK_F4 && message.message == WM_SYSKEYDOWN)
-				SendMessage(GetAncestor(GetFocus(), GA_ROOT), WM_CLOSE, 0, 0);
-			if (message.wParam == VK_F10)
-				SendMessage(GetAncestor(GetFocus(), GA_ROOT), (message.message == WM_SYSKEYDOWN) ? WM_KEYDOWN : WM_KEYUP, message.wParam, message.lParam);
-			break;
+	GetMessage(&message, nullptr, 0, 0);
 
-		// process everything else
-		default:
-			winwindow_dispatch_message(*m_machine, message);
-			break;
-		}
-	} 
-	else 
+	switch (message.message)
 	{
-		Sleep( 1 ); // give up this slice
+	// check for F10 -- we need to capture that ourselves
+	case WM_SYSKEYDOWN:
+	case WM_SYSKEYUP:
+		if (message.wParam == VK_F4 && message.message == WM_SYSKEYDOWN)
+			SendMessage(GetAncestor(GetFocus(), GA_ROOT), WM_CLOSE, 0, 0);
+		if (message.wParam == VK_F10)
+			SendMessage(GetAncestor(GetFocus(), GA_ROOT), (message.message == WM_SYSKEYDOWN) ? WM_KEYDOWN : WM_KEYUP, message.wParam, message.lParam);
+		break;
+
+	// process everything else
+	default:
+		winwindow_dispatch_message(*m_machine, message);
+		break;
 	}
 		
 	// mark the debugger as active
