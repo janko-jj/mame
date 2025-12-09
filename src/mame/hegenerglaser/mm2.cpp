@@ -49,6 +49,10 @@ http://chesseval.com/ChessEvalJournal/PrototypeMMV.htm (mistakenly claims it's M
 
 MM VI (Saitek, 1994) is on different hardware, H8 CPU.
 
+B&P (Blitz- und Problemlösungs-Modul, initially called Blitz-Modul) 2025 version
+is a free update by one of the people who worked on the original version. It adds
+some new features, and supports the HG240 module.
+
 ================================================================================
 
 MM IV + MM V hardware notes
@@ -147,6 +151,7 @@ public:
 	void mm2(machine_config &config);
 	void mm2nona(machine_config &config);
 	void bup(machine_config &config);
+	void bup25(machine_config &config);
 
 protected:
 	virtual void machine_reset() override ATTR_COLD { m_maincpu->set_input_line(0, CLEAR_LINE); }
@@ -394,6 +399,12 @@ void mm2_state::bup(machine_config &config)
 	config.set_default_layout(layout_mephisto_bup);
 }
 
+void mm2_state::bup25(machine_config &config)
+{
+	mm2(config);
+	config.set_default_layout(layout_mephisto_bup);
+}
+
 void mm2_state::mm2(machine_config &config)
 {
 	bup(config);
@@ -410,7 +421,6 @@ void mm2_state::mm2(machine_config &config)
 void mm2_state::mm2nona(machine_config &config)
 {
 	bup(config);
-
 	config.set_default_layout(layout_mephisto_mm2);
 }
 
@@ -432,8 +442,20 @@ ROM_START( bupa )
 	ROM_LOAD("bupa_2.bin", 0xc000, 0x4000, CRC(708338ea) SHA1(d617c4aa2161865a22b4b0646ba793f8a1fda863) )
 ROM_END
 
+ROM_START( bupb )
+	ROM_REGION( 0x10000, "maincpu", 0 )
+	ROM_LOAD("a1", 0x8000, 0x4000, CRC(99c6293d) SHA1(10f6fa425afeff65146cede02a3a454c6f170af9) )
+	ROM_LOAD("b1", 0xc000, 0x4000, CRC(b446c9be) SHA1(8523d7f35a65c77b42bf43f5fb6036740331fd4a) )
+ROM_END
 
-ROM_START( mm2 ) // 10 Sep 1986
+ROM_START( bup25 )
+	ROM_REGION( 0x10000, "maincpu", 0 )
+	ROM_LOAD("bup_v25.2-1.bin", 0x8000, 0x4000, CRC(f9e688b6) SHA1(414f3930f306025c64f55bd5b2593e560a3a4697) )
+	ROM_LOAD("bup_v25.2-2.bin", 0xc000, 0x4000, CRC(0db90894) SHA1(f385d002bca55521c9dd61417f49c93021a5662e) )
+ROM_END
+
+
+ROM_START( mm2 ) // 10 Sep 1986, serial 05899xx
 	ROM_REGION( 0x10000, "maincpu", 0 )
 	ROM_LOAD("400", 0x8000, 0x8000, CRC(e8c1f431) SHA1(c32dfa66eefbf3e539438d2fe6e6916f78a128be) ) // HN27C256G-20
 	// 2-EPROM version also exists: CRC32 e9adcb8f & d40cbfc2
@@ -453,7 +475,7 @@ ROM_END
 
 ROM_START( mm2c ) // serial 05780xx
 	ROM_REGION( 0x10000, "maincpu", 0 )
-	ROM_LOAD("hg86", 0x8000, 0x4000, CRC(e26d1f17) SHA1(3227bb1f8f22dd0d902a9a8be3c508b45c57d6cc) )
+	ROM_LOAD("hg8b", 0x8000, 0x4000, CRC(e26d1f17) SHA1(3227bb1f8f22dd0d902a9a8be3c508b45c57d6cc) )
 	ROM_LOAD("50",   0xc000, 0x4000, CRC(86d77724) SHA1(e46c59e87465a9a1784fbaf4743649b2c10006e0) )
 ROM_END
 
@@ -467,6 +489,12 @@ ROM_START( mm2e ) // 13 Sep 1985, serial 05569xx
 	ROM_REGION( 0x10000, "maincpu", 0 )
 	ROM_LOAD("hg_8b_13.9", 0x8000, 0x4000, CRC(e2daac82) SHA1(c9fa59ca92362f8ee770733073bfa2ab8c7904ad) )
 	ROM_LOAD("c-f_6.9",    0xc000, 0x4000, CRC(5e296939) SHA1(badd2a377259cf738cd076d8fb245c3dc284c24d) )
+ROM_END
+
+ROM_START( mm2f ) // 4 Oct 1985, but older than mm2e according to hex compare
+	ROM_REGION( 0x10000, "maincpu", 0 )
+	ROM_LOAD("8-b_mmii_4.10.85_cc", 0x8000, 0x4000, CRC(5581a564) SHA1(b8449c7afcfde226095b1ff26c84ae7f7104a373) ) // D27127A-1
+	ROM_LOAD("c-f_mmii_4.10.85_cc", 0xc000, 0x4000, CRC(b34b4988) SHA1(b4d64326588b825322f14cb25d30208e073db5ea) ) // "
 ROM_END
 
 
@@ -539,8 +567,10 @@ ROM_END
 *******************************************************************************/
 
 //    YEAR  NAME      PARENT  COMPAT  MACHINE   INPUT  CLASS      INIT        COMPANY, FULLNAME, FLAGS
-SYST( 1985, bup,      0,      0,      bup,      bup,   mm2_state, empty_init, "Hegener + Glaser", u8"Mephisto Blitz- und Problemlösungs-Modul (set 1)", MACHINE_SUPPORTS_SAVE )
-SYST( 1985, bupa,     bup,    0,      bup,      bup,   mm2_state, empty_init, "Hegener + Glaser", u8"Mephisto Blitz- und Problemlösungs-Modul (set 2)", MACHINE_SUPPORTS_SAVE )
+SYST( 1985, bup,      0,      0,      bup,      bup,   mm2_state, empty_init, "Hegener + Glaser", u8"Mephisto Blitz- und Problemlösungs-Modul (set 1)", MACHINE_SUPPORTS_SAVE ) // aka Blitz-Modul
+SYST( 1985, bupa,     bup,    0,      bup,      bup,   mm2_state, empty_init, "Hegener + Glaser", u8"Mephisto Blitz- und Problemlösungs-Modul (set 2)", MACHINE_SUPPORTS_SAVE ) // "
+SYST( 1985, bupb,     bup,    0,      bup,      bup,   mm2_state, empty_init, "Hegener + Glaser", u8"Mephisto Blitz- und Problemlösungs-Modul (set 3)", MACHINE_SUPPORTS_SAVE ) // "
+SYST( 2025, bup25,    bup,    0,      bup25,    bup,   mm2_state, empty_init, "Lars Hjorth",      u8"Mephisto Blitz- und Problemlösungs-Modul (version 25.2)", MACHINE_SUPPORTS_SAVE ) // "
 
 SYST( 1985, mm2,      0,      0,      mm2,      mm2,   mm2_state, empty_init, "Hegener + Glaser", "Mephisto MM II (set 1, v4.00)", MACHINE_SUPPORTS_SAVE )
 SYST( 1985, mm2a,     mm2,    0,      mm2,      mm2,   mm2_state, empty_init, "Hegener + Glaser", "Mephisto MM II (set 2, v3.00)", MACHINE_SUPPORTS_SAVE )
@@ -548,6 +578,7 @@ SYST( 1985, mm2b,     mm2,    0,      mm2,      mm2,   mm2_state, empty_init, "H
 SYST( 1985, mm2c,     mm2,    0,      mm2,      mm2,   mm2_state, empty_init, "Hegener + Glaser", "Mephisto MM II (set 4)", MACHINE_SUPPORTS_SAVE )
 SYST( 1985, mm2d,     mm2,    0,      mm2,      mm2,   mm2_state, empty_init, "Hegener + Glaser", "Mephisto MM II (set 5)", MACHINE_SUPPORTS_SAVE )
 SYST( 1985, mm2e,     mm2,    0,      mm2,      mm2,   mm2_state, empty_init, "Hegener + Glaser", "Mephisto MM II (set 6)", MACHINE_SUPPORTS_SAVE )
+SYST( 1985, mm2f,     mm2,    0,      mm2,      mm2,   mm2_state, empty_init, "Hegener + Glaser", "Mephisto MM II (set 7)", MACHINE_SUPPORTS_SAVE )
 
 SYST( 1985, mm2nona,  0,      0,      mm2nona,  mm2,   mm2_state, empty_init, "Hegener + Glaser", "Mephisto MM II (Nona program, DOCCC 1985 Leiden TM)", MACHINE_SUPPORTS_SAVE )
 

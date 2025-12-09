@@ -11,7 +11,10 @@
 #pragma once
 
 #include "1801vp014.h"
+#include "vm1timer.h"
 
+#include "bus/bk/parallel.h"
+#include "bus/bk/carts.h"
 #include "bus/qbus/qbus.h"
 #include "cpu/t11/t11.h"
 #include "imagedev/cassette.h"
@@ -19,9 +22,9 @@
 #include "machine/pdp11.h"
 #include "machine/timer.h"
 #include "sound/dac.h"
-#include "vm1timer.h"
 
 #include "emupal.h"
+
 
 class bk_state : public driver_device
 {
@@ -36,6 +39,7 @@ public:
 		, m_timer(*this, "timer")
 		, m_kbd(*this, "keyboard")
 		, m_qbus(*this, "qbus")
+		, m_up(*this, "up")
 		, m_ram(*this, "ram%u", 0U)
 		, m_view1(*this, "view1")
 		, m_view2(*this, "view2")
@@ -93,6 +97,7 @@ private:
 	required_device<k1801vm1_timer_device> m_timer;
 	required_device<k1801vp014_device> m_kbd;
 	required_device<qbus_device> m_qbus;
+	required_device<bk_parallel_slot_device> m_up;
 	optional_shared_ptr_array<uint16_t, 8> m_ram;
 
 	memory_view m_view1, m_view2;

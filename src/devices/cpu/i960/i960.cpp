@@ -1738,7 +1738,7 @@ void i960_cpu_device::execute_op(uint32_t opcode)
 
 			case 0xb: // roundrl
 				m_icount -= 70;
-				t1f = get_1_rif(opcode);
+				t1f = get_1_rifl(opcode);
 				set_rifl(opcode, round_to_int(t1f));
 				break;
 
@@ -2411,6 +2411,8 @@ void i960_cpu_device::device_reset()
 	m_r[I960_FP] = m_program.read_dword(m_PRCB+24);
 	m_r[I960_SP] = m_r[I960_FP] + 64;
 	m_rcache_pos = 0;
+
+	m_stall_state.burst_mode = false;
 }
 
 std::unique_ptr<util::disasm_interface> i960_cpu_device::create_disassembler()
