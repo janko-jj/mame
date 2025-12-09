@@ -63,6 +63,7 @@ jobs:
         ARCHOPTS: "-fuse-ld=lld"
         SUBTARGET: ${{ matrix.subtarget }}
         TOOLS: 1
+      # ---
       run: make SOURCES=sinclair/specnext.cpp TOOLS=0 REGENIE=1 PRECOMPILE=0 -j$(nproc)
     - name: Validate
       run: ./${{ matrix.executable }}.exe -validate
