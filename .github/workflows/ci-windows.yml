@@ -37,6 +37,7 @@ jobs:
             subtarget: mame
             executable: mame
     runs-on: ${{ matrix.os }}
+    permissions: write-all
     env:
        CCACHE_DIR: "${{ github.workspace }}/.ccache"
     defaults:
@@ -62,7 +63,7 @@ jobs:
         ARCHOPTS: "-fuse-ld=lld"
         SUBTARGET: ${{ matrix.subtarget }}
         TOOLS: 1
-      run: make -j$(nproc) SOURCES=sinclair/specnext.cpp precompile=0
+      run: make - SOURCES=sinclair/specnext.cpp TOOLS=0 REGENIE=1 j$(nproc)
     - name: Validate
       run: ./${{ matrix.executable }}.exe -validate
     - uses: actions/upload-artifact@main
@@ -70,6 +71,4 @@ jobs:
         name: ${{ matrix.executable }}-windows-${{ matrix.compiler }}-${{ github.sha }}
         path: |
           ${{ matrix.executable }}.exe
-          chdman.exe
-          unidasm.exe
         if-no-files-found: error
