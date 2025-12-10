@@ -41,7 +41,7 @@ namespace {
 
 class win_timer {
 public:
-	win_timer() : m_timer( 0 ), m_hwnd(0) {}
+	win_timer() : m_timer_id( 0 ), m_hwnd(0) {}
 	~win_timer() { kill(); }
 	UINT_PTR is_set() { return m_is_set; }
     void set_timer( HWND hwnd, UINT_PTR id_event, UINT u_elapse ) {
