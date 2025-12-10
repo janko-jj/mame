@@ -3,7 +3,7 @@ name: CI (Windows)
 on:
   push:
     branches:
-    - "main"
+    - "master"
     - "my_*"
     paths:
     - '.github/workflows/**'
