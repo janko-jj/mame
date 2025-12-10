@@ -1,5 +1,5 @@
 // license:BSD-3-Clause
-// copyright-holders:Aaron Giles, Vas Crabb
+// copyright-holders:Aaron Giles, Vas Crabb, Janko Stamenović
 //============================================================
 //
 //  debugwin.cpp - Win32 debug window handling
@@ -41,22 +41,27 @@ namespace {
 
 class win_timer {
 public:
-	win_timer() : m_hwnd(0), m_timer_id(0),m_is_set(false)  {}
-	~win_timer() { kill(); }
-	UINT_PTR is_set() { return m_is_set; }
-    void set_timer( HWND hwnd, UINT_PTR id_event, UINT u_elapse ) {
+	win_timer() : m_timer_id(0) {}
+	~win_timer() 
+	{ 
+		kill(); 
+	}
+	void set_timer(HWND hwnd, UINT_PTR id_event, UINT u_elapse) 
+	{
 		kill();
 		m_idevent = id_event;
 		m_hwnd = hwnd;
-		m_timer_id = SetTimer( hwnd, id_event, u_elapse, (TIMERPROC)NULL );
-		m_is_set = true;
+		m_timer_id = SetTimer(hwnd, id_event, u_elapse, (TIMERPROC)NULL);
 	}
-	void kill() { if (m_timer_id) KillTimer( m_hwnd, m_idevent ); }
-	UINT_PTR  m_idevent;
+	void kill() 
+	{
+		if (m_timer_id)
+			KillTimer(m_hwnd, m_idevent);
+	}
 private:
+	UINT_PTR m_idevent;
 	HWND m_hwnd;
-	UINT_PTR  m_timer_id;
-	bool m_is_set;
+	UINT_PTR m_timer_id;
 };
 
 class debugger_windows :
@@ -200,13 +205,10 @@ void debugger_windows::wait_for_debugger(device_t &device, bool firststop)
 			}
 		}
 		
-		if (!m_min_periodic_timer.is_set())
-		{
-			// 100 == 10 times per second tick to allow GetMessage
-			// to be interrupted when no user messages happen
-			// which allows periodic to be called
-			m_min_periodic_timer.set_timer(front_hwnd, WM_USER+1, 100); 
-		}
+		// 100 == 10 times per second tick to interrupt GetMessage
+		// when no user input messages happen
+		// which allows lua's periodic to be called periodically
+		m_min_periodic_timer.set_timer(front_hwnd, WM_USER+1, 100); 
 	}
 	
 	// update the views in the console to reflect the current CPU
