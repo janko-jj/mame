@@ -45,8 +45,6 @@ jobs:
     # see its readme to disable that if no permissions are to be allowed
     permissions: 
         actions: write
-    env:
-       CCACHE_DIR: "${{ github.workspace }}/.ccache"
     defaults:
       run:
         shell: msys2 {0}
@@ -57,7 +55,7 @@ jobs:
         install: git make ccache ${{ matrix.slug }}-${{ matrix.cc }} ${{ matrix.slug }}-python ${{ matrix.slug }}-lld ${{ matrix.slug }}-llvm ${{ matrix.slug }}-libc++ ${{ matrix.extrapkg }}
     - uses: actions/checkout@main
       with:
-        fetch-depth: 0  
+        fetch-depth: 0
     - name: Setup ccache
       uses: Chocobo1/setup-ccache-action@v1.5.2
       with:
