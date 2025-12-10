@@ -44,14 +44,14 @@ public:
 	win_timer() : m_timer( 0 ), m_hwnd(0) {}
 	~win_timer() { kill(); }
 	UINT_PTR is_set() { return m_is_set; }
-    void set_timer( HWND hWnd, UINT_PTR id_event, UINT u_elapse ) {
+    void set_timer( HWND hwnd, UINT_PTR id_event, UINT u_elapse ) {
 		kill();
 		m_idevent = id_event;
-		m_hwnd = hWnd;
-		m_timer_id = SetTimer( hWnd, id_event, u_elapse, (TIMERPROC)NULL );
+		m_hwnd = hwnd;
+		m_timer_id = SetTimer( hwnd, id_event, u_elapse, (TIMERPROC)NULL );
 		m_is_set = true;
 	}
-	void kill() { if (m_timer_id) KillTimer( hWnd, m_idevent ); }
+	void kill() { if (m_timer_id) KillTimer( m_hwnd, m_idevent ); }
 	UINT_PTR  m_idevent;
 private:
 	HWND m_hwnd;
