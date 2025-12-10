@@ -45,6 +45,8 @@ jobs:
     # see its readme to disable that if no permissions are to be allowed
     permissions: 
         actions: write
+    env:
+       CCACHE_DIR: "${{ github.workspace }}/.ccache"        
     defaults:
       run:
         shell: msys2 {0}
