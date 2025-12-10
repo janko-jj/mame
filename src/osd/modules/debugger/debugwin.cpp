@@ -41,18 +41,22 @@ namespace {
 
 class win_timer {
 public:
-	win_timer() : m_timer( 0 ) {}
+	win_timer() : m_timer( 0 ), m_hwnd(0) {}
 	~win_timer() { kill(); }
-	UINT_PTR get_timer_id() { return m_timer_id; }
+	UINT_PTR is_set() { return m_is_set; }
     void set_timer( HWND hWnd, UINT_PTR id_event, UINT u_elapse ) {
 		kill();
 		m_idevent = id_event;
+		m_hwnd = hWnd;
 		m_timer_id = SetTimer( hWnd, id_event, u_elapse, (TIMERPROC)NULL );
+		m_is_set = true;
 	}
-	void kill() { if (m_timer_id) KillTimer( m_timer_id, m_idevent ); }
+	void kill() { if (m_timer_id) KillTimer( hWnd, m_idevent ); }
 	UINT_PTR  m_idevent;
 private:
+	HWND m_hwnd;
 	UINT_PTR  m_timer_id;
+	bool m_is_set;
 };
 
 class debugger_windows :
@@ -197,9 +201,12 @@ void debugger_windows::wait_for_debugger(device_t &device, bool firststop)
 		}
 	}
 	
-	if (!m_min_periodic_timer.get_timer_id())
+	if (!m_min_periodic_timer.is_set())
 	{
-		m_min_periodic_timer.set_timer( window(), WM_USER+1, 100 ); // 100 == 10 times per second
+		// 100 == 10 times per second tick to allow GetMessage
+		// to be interrupted when no user messages happen
+		// which allows periodic to be called
+		m_min_periodic_timer.set_timer( window(), WM_USER+1, 100 ); 
 	}
 
 	// update the views in the console to reflect the current CPU
