@@ -41,7 +41,7 @@ namespace {
 
 class win_timer {
 public:
-	win_timer() : m_timer_id( 0 ), m_hwnd(0) {}
+	win_timer() : m_hwnd(0), m_timer_id(0),m_is_set(false)  {}
 	~win_timer() { kill(); }
 	UINT_PTR is_set() { return m_is_set; }
     void set_timer( HWND hwnd, UINT_PTR id_event, UINT u_elapse ) {
@@ -183,10 +183,10 @@ void debugger_windows::wait_for_debugger(device_t &device, bool firststop)
 	{
 		m_main_console = create_window<debugger::win::consolewin_info>();
 
+		HWND const front_hwnd = dynamic_cast<win_window_info &>(*osd_common_t::window_list().front()).platform_window();
+
 		// set the starting position for new auxiliary windows
-		HMONITOR const nearest_monitor = MonitorFromWindow(
-				dynamic_cast<win_window_info &>(*osd_common_t::window_list().front()).platform_window(),
-				MONITOR_DEFAULTTONEAREST);
+		HMONITOR const nearest_monitor = MonitorFromWindow(front_hwnd, MONITOR_DEFAULTTONEAREST);
 		if (nearest_monitor)
 		{
 			MONITORINFO info;
@@ -199,16 +199,16 @@ void debugger_windows::wait_for_debugger(device_t &device, bool firststop)
 				m_window_start_x = m_next_window_pos.x;
 			}
 		}
+		
+		if (!m_min_periodic_timer.is_set())
+		{
+			// 100 == 10 times per second tick to allow GetMessage
+			// to be interrupted when no user messages happen
+			// which allows periodic to be called
+			m_min_periodic_timer.set_timer(front_hwnd, WM_USER+1, 100); 
+		}
 	}
 	
-	if (!m_min_periodic_timer.is_set())
-	{
-		// 100 == 10 times per second tick to allow GetMessage
-		// to be interrupted when no user messages happen
-		// which allows periodic to be called
-		m_min_periodic_timer.set_timer( window(), WM_USER+1, 100 ); 
-	}
-
 	// update the views in the console to reflect the current CPU
 	if (m_main_console)
 		m_main_console->set_cpu(device);
