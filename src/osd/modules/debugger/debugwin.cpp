@@ -210,7 +210,7 @@ void debugger_windows::wait_for_debugger(device_t &device, bool firststop)
 		// which allows lua's periodic to be called periodically
 		m_min_periodic_timer.set_timer(front_hwnd, WM_USER+1, 100); 
 	}
-	
+
 	// update the views in the console to reflect the current CPU
 	if (m_main_console)
 		m_main_console->set_cpu(device);
@@ -256,11 +256,10 @@ void debugger_windows::wait_for_debugger(device_t &device, bool firststop)
 		winwindow_dispatch_message(*m_machine, message);
 		break;
 	}
-		
+
 	// mark the debugger as active
 	m_waiting_for_debugger = false;
 }
-
 
 
 void debugger_windows::debugger_update()
