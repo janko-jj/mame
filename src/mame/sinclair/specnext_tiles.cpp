@@ -121,6 +121,7 @@ void specnext_tiles_device::tilemap_update()
 	m_tilemap[0]->set_transparent_pen(m_transp_colour);
 	m_tilemap[0]->set_scrollx(-m_offset_h + (m_tm_scroll_x << 1));
 
+	m_tilemap[1]->set_transparent_pen(m_transp_colour);
 	m_tilemap[1]->set_scrollx(-m_offset_h + m_tm_scroll_x);
 	m_tilemap[1]->map_pen_to_layer(0, 0, TILEMAP_PIXEL_LAYER0);
 	m_tilemap[1]->map_pen_to_layer(0, 1, TILEMAP_PIXEL_LAYER0);
