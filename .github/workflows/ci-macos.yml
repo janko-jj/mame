@@ -36,11 +36,11 @@ jobs:
       uses: Chocobo1/setup-ccache-action@v1.5.2      
     - name: Prepare for complay cache
       run: |
-        grep complay makefile >complay.prehash
-        scripts/build/complay.py >>complay.prehash
+          grep complay makefile >complay.prehash
+          cat scripts/build/complay.py >>complay.prehash
     - name: cache complay-ed layouts
       uses: actions/cache@v3
-        with:
+      with:
           path: ${{ github.workspace }}/build/generated/mame/layout
           key: complay_${{ hashFiles('complay.prehash','**.lay') }}
     - name: Touch complay-ed layouts
