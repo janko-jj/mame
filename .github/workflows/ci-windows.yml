@@ -62,6 +62,19 @@ jobs:
       uses: Chocobo1/setup-ccache-action@v1.5.2
       with:
          windows_compile_environment: msys2
+    - name: Prepare for complay cache
+      run: |
+          grep complay makefile >complay.prehash
+          cat scripts/build/complay.py >>complay.prehash
+    - name: cache complay-ed layouts
+      uses: actions/cache@v3
+      with:
+          path: ${{ github.workspace }}/build/generated/mame/layout
+          key: complay_${{ hashFiles('complay.prehash','**.lay') }}
+    - name: Touch complay-ed layouts
+      continue-on-error: true
+      run: |
+        cd build/generated/mame/layout && touch *.lh
     - name: Build
       env:
         OVERRIDE_AR: "llvm-ar"
