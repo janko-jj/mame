@@ -55,12 +55,16 @@ jobs:
     - uses: actions/checkout@main
       with:
         fetch-depth: 0
+    - name: refresh keys
+      with:
+          continue-on-error: true
+      run: pacman-key --refresh-keys
     - name: Setup ccache
       uses: Chocobo1/setup-ccache-action@v1.5.2
       with:
          windows_compile_environment: msys2
-         install_ccache: false
-         update_packager_index: false            
+         install_ccache: true
+         update_packager_index: true
     - name: Prepare for complay cache
       run: |
           grep complay makefile >complay.prehash
